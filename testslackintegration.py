@@ -8,6 +8,60 @@ import time
 
 app= Flask(__name__)
 
+class slack_external_data:
+    token = None
+    name = None
+    value = None
+    callback_id = None
+    team_id = None
+    team_domain = None
+    channel_id = None
+    channel_name = None
+    user_id = None
+    user_name = None
+    action_ts = None
+    message_ts = None
+    attachment_id = None
+
+    def __init__(self,request):
+
+        print ('entered external data call initializaiton')
+
+        #obtain the json passed
+        keeys = list(request.form.keys())
+        valluees = list(request.form.values())
+        # printing the json for log purposes
+        print ('Below is the json payload for a slack command')
+        for i in range(len(keeys)):
+            print(keeys[i] + " contains " + valluees[i])
+
+        workablejson = valluees[0]
+        data = json.loads(workablejson)
+
+        self.token = data['token']
+
+        self.value = data['value']
+
+        self.attachment_id = data['attachment_id']
+
+        self.message_ts = data['message_ts']
+
+        self.action_ts = data['action_ts']
+
+        self.callback_id = data['callback_id']
+
+        teamdata =  data['team']
+        self.team_domain=teamdata['domain']
+        self.team_id=teamdata['id']
+
+        channeldata = data['channel']
+        self.channel_name=channeldata['name']
+        self.channel_id=channeldata['id']
+
+        userdata = data['user']
+        self.user_name=userdata['name']
+        self.user_id=userdata['id']
+
 class slack_slash_command:
     token = None
     team_id = None
@@ -137,44 +191,44 @@ class slack_slash_response_command:
                     print  ('action_value is {}'.format(seloptitem['value']))
                     self.action_value=seloptitem['value']
 
-        print(data['team'])
+        print('Team data is {}'.format(data['team']))
         teamdata =  data['team']
         self.team_domain=teamdata['domain']
         self.team_id=teamdata['id']
 
-        print(data['channel'])
+        print('Channel data is {}'.format(data['channel']))
         channeldata = data['channel']
         self.channel_name=channeldata['name']
         self.channel_id=channeldata['id']
 
 
-        print(data['user'])
+        print('User data is {}'.format(data['user']))
         userdata = data['user']
         self.user_name=userdata['name']
         self.user_id=userdata['id']
 
-        print(data['attachment_id'])
+        print('Attachment ID is {}'.format(data['attachment_id']))
         self.attachment_id = data['attachment_id']
 
-        print(data['response_url'])
+        print('Response URL is {}'.format(data['response_url']))
         self.response_url = data['response_url']
 
-        print(data['trigger_id'])
+        print('Trigger id is {}'.format(data['trigger_id']))
         self.trigger_id = data['trigger_id']
 
-        print(data['is_app_unfurl'])
+        print('App Data Unfurl is {}'.format(data['is_app_unfurl']))
         self.is_app_unfurl = data['is_app_unfurl']
 
-        print(data['token'])
+        print('Token id is {}'.format(data['token']))
         self.token = data['token']
 
-        print (data['message_ts'])
+        print ('Message ts is {}'.format(data['message_ts']))
         self.message_ts = data['message_ts']
 
-        print (data['action_ts'])
+        print ('Action ts is {}'.format(data['action_ts']))
         self.action_ts = data['action_ts']
 
-        print (data['callback_id'])
+        print ('Callback id is {}'.format(data['callback_id']))
         self.callback_id = data['callback_id']
 
 
@@ -349,23 +403,23 @@ def process_slack_command_response(threadName,slack_slash_response_command):
 
         print(r.status_code, r.reason)  # return jsonify ({'tasks':tasks})
 
-    elif slack_slash_response_command.callback_id == 'testing_response' and slack_slash_response_command.action_name == 'cas':
+    elif slack_slash_response_command.callback_id == 'testing_response' and slack_slash_response_command.action_value == 'cas':
         print(threadName)
-        print("Entered the response builder")
+        print("Entered the response builder fetching external data")
         payload = {
-                    "text": "You need to check outside ",
+                    "text": "We will bring you the data ",
                     "response_type": "in_channel",
                     "attachments": [
                         {
-                            "text": "What will that be ?",
+                            "text": "Try typing in and see if it brings you the results ?",
                             "fallback": "If you could read this message, you'd be choosing something fun to do right now.",
                             "color": "#3AA3E3",
                             "attachment_type": "default",
                             "callback_id": "extdata_selection",
                             "actions": [
                                         {
-                                            "name": "bugs_list",
-                                            "text": "Which random bug do you want to resolve?",
+                                            "name": "extdata_list",
+                                            "text": "Which location do you have to go?",
                                             "type": "select",
                                             "data_source": "external",
                                             "min_query_length": 3,
@@ -393,9 +447,9 @@ def command_response_parse():
     elif new_response.action_value in ['others']:
         _thread.start_new_thread(process_slack_command_response, ("Thread-3",new_response))
         return 'Hi ' + new_response.user_name + ', You selected ' + new_response.action_value, 200
-    elif new_response.action_value in ['cts']:
+    elif new_response.action_value in ['cas']:
         _thread.start_new_thread(process_slack_command_response, ("Thread-4", new_response))
-        return 'Hi ' + new_response.user_name + ', We are preparing your data', 200
+        return 'Hi ' + new_response.user_name + ', fetching your options', 200
     else:
         _thread.start_new_thread(process_slack_command_response, ("Thread-2", new_response))
         return 'Hi ' + new_response.user_name + ', You selected ' + new_response.action_value, 200
@@ -406,26 +460,58 @@ def command_response_parse():
 @app.route('/techsched/api/v1.0/commands/loadextdata', methods=['POST'])
 def loadextdata():
     print ("Entered external data")
-    keeys = list(request.form.keys())
-    valluees = list(request.form.values())
-    # printing the json for log purposes
-    for i in range(len(keeys)):
-        print(keeys[i] + " : " + valluees[i])
 
-    returnjson = [
-        {
-            "text": "Unexpected sentience",
-            "value": "AI-2323"
-        },
-        {
-            "text": "Bot biased toward other bots",
-            "value": "SUPPORT-42"
-        },
-        {
-            "text": "Bot broke my toaster",
-            "value": "IOT-75"
-        }
-    ]
+    extdata = slack_external_data (request)
+
+
+    if extdata.value == '123':
+        returnjson = [
+            {
+                "text": "123",
+                "value": "123"
+            },
+            {
+                "text": "456",
+                "value": "456"
+            },
+            {
+                "text": "789",
+                "value": "789"
+            }
+        ]
+
+    elif extdata.value == 'abc':
+        returnjson = [
+            {
+                "text": "Ajman",
+                "value": "ajm"
+            },
+            {
+                "text": "Sharjah",
+                "value": "shj"
+            },
+            {
+                "text": "Dubai",
+                "value": "dxb"
+            }
+        ]
+
+    else:
+        returnjson = [
+            {
+                "text": "Unexpected sentience",
+                "value": "AI-2323"
+            },
+            {
+                "text": "Bot biased toward other bots",
+                "value": "SUPPORT-42"
+            },
+            {
+                "text": "Bot broke my toaster",
+                "value": "IOT-75"
+            }
+        ]
+
 
     return jsonify({'options': returnjson})
 
