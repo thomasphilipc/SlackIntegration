@@ -13,7 +13,7 @@ import re
 
 ORG_EMAIL   = "@gmail.com"
 FROM_EMAIL  = "roamworkstech" + ORG_EMAIL
-FROM_PWD    = "Tom@track24"
+FROM_PWD    = "Tom@RW1206"
 SMTP_SERVER = "imap.gmail.com"
 SMTP_PORT   = 993
 
