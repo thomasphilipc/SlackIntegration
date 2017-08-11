@@ -172,6 +172,13 @@ def update_event(calendarId,eventId,eventItem):
     updated_event_class = event_item(updated_event)
     updated_event_class.show_event()
 
+def delete_event(calendarId,eventId):
+
+    thisCalendarId=calendarId
+    thisEventId=eventId
+    service=init_google_service_call()
+
+    service.events().delete(calendarId=thisCalendarId, eventId=thisEventId).execute()
 
 
 def init_google_service_call():
@@ -327,7 +334,7 @@ def parse_json_email(data):
             event = create_event_json(event_reqestlist[0],event_reqestlist[1],event_reqestlist[2],event_reqestlist[3],event_reqestlist[4])
             print(event)
             # creating events
-            #create_event('roamworkstech@gmail.com',event)
+            create_event('roamworkstech@gmail.com',event)
 
 
 def build_event_fromEmail(text):
