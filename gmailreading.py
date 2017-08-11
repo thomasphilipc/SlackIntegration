@@ -4,6 +4,9 @@ import imaplib
 import email
 from bs4 import BeautifulSoup
 import re
+import json
+from flask import Flask , jsonify, abort, make_response, request
+from flask import Flask , jsonify, abort, make_response, request
 
 # -------------------------------------------------
 #
@@ -49,7 +52,6 @@ def read_email_from_gmail():
 
         received_on = a[a.find(",")-3:a.find("-")]
         received_on.strip()
-        print(len(received_on))
 
         subject = email_message['subject']
         #because subject may contain additional metadata , strip them , and shorten the subject
@@ -83,14 +85,50 @@ def read_email_from_gmail():
                 pass
 
 
-        print("FROM:"+sender)
-        print("SUBJECT:"+subject)
-        print("TO:"+receipient)
-        if cc != None:
-            print("CC:"+ cc)
-        print("DATE:"+received_on)
-        print("Body_HTML:"+body_str)
-        print("Body_Simple:"+str(body))
+        #print("FROM:"+sender)
+        #print("SUBJECT:"+subject)
+        #print("TO:"+receipient)
+        #if cc != None:
+        #    print("CC:"+ cc)
+        #print("DATE:"+received_on)
+        #print("Body_HTML:"+body_str)
+        #print("Body_Simple:"+str(body))
+
+        keys = ['from','subject','to','date','bodyHtml','bodySimple']
+        values = [sender,subject,receipient,received_on,body_str,body]
+        data = build_json(keys,values)
+        parse_json_email(data)
+
+
+def build_json(keys = [],values = []):
+    length = len(keys)
+    data = {}
+    for i in range(length):
+        keyitem = keys[i]
+        valuitem = values[i]
+        data[keyitem]= valuitem
+    json_data = json.dumps(data)
+    return json_data
+
+def parse_json_email(data):
+    this_json = json.loads(data)
+    keeys = list(this_json.keys())
+    valluees = list(this_json.values())
+
+    if 'subject' in keeys :
+        cursor = keeys.index('subject')
+        value = valluees[cursor]
+
+        if value == '#cal#parasql':
+            print ('ParaSQL calendar entry')
+            print(this_json)
+            build_event_fromEmail(this_json['bodyHtml'])
+
+
+def build_event_fromEmail(text):
+    print(text)
+
 
 
 read_email_from_gmail()
+

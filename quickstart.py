@@ -1,6 +1,9 @@
 import httplib2
 import json
 import sys
+from dateutil.tz import tzoffset
+from datetime import datetime
+from dateutil.tz import tzoffset
 
 from apiclient.discovery import build
 from oauth2client import tools
@@ -8,7 +11,43 @@ from oauth2client.file import Storage
 from oauth2client.client import AccessTokenRefreshError
 from oauth2client.client import OAuth2WebServerFlow
 
-# For this example, the client id and client secret are command-line arguments.
+class calendar_item():
+    kind ='calendar#calendarListEntry'
+
+class event_item():
+    kind = 'calendar#event'
+    def __init__(self,event):
+        if (self.kind == event.get('kind')):
+            self.kind = event.get('kind')
+            self.id = event.get('id')
+            self.summary = event.get('summary')
+            self.description = event.get('description')
+            self.location = event.get('location')
+            self.htmlLink = event.get('htmlLink')
+            eventstartvar = event.get('start')
+            self.startDateTime = eventstartvar.get('dateTime')
+            eventendvar = event.get('end')
+            self.endDateTime = eventendvar.get('dateTime')
+            self.created = event.get('created')
+            self.updated = event.get('updated')
+            self.status = event.get('status')
+
+    def show_event(self):
+            print('Kind: '+self.kind)
+            print('Id: '+self.id)
+            print('Summary: '+self.summary)
+            print('Description: '+str(self.description))
+            print('Location: '+self.location)
+            print('HTML Link: '+self.htmlLink )
+            print('Starting: '+self.startDateTime )
+            print('Ending: '+self.endDateTime)
+            print('Created: '+self.created )
+            print('Updated: '+self.updated)
+            print('Status : '+self.status)
+
+
+
+# these are generated for the account
 client_id = '1006875010209-bs2h0kgmckohh2cilcldndmu8t8fvj0t.apps.googleusercontent.com'
 client_secret = 'lw0l3rtYjb1dfI0J1W5KXL46'
 
@@ -29,6 +68,10 @@ def build_json(keys = [],values = []):
         data[keyitem]= valuitem
     json_data = json.dumps(data)
     return json_data
+
+
+def create_event():
+    print('Create an event')
 
 
 def main():
@@ -53,7 +96,7 @@ def main():
   # The new credentials are also stored in the supplied Storage object,
   # which updates the credentials.dat file.
   if credentials is None or credentials.invalid:
-    credentials = tools.run_flow(flow, storage, tools.argparser.parse_args())
+    credentials = tools.run_flow(flow, storage)
 
   # Create an httplib2.Http object to handle our HTTP requests, and authorize it
   # using the credentials.authorize() function.
@@ -70,28 +113,8 @@ def main():
 
 
 
-  event = {
-  'summary': 'Test Event',
-  'location': 'QER - Jebel Ali',
-  'description': 'Profiling HEMS equipment.',
-  'start': {
-    'dateTime': '2017-08-06T09:00:00-07:00',
-  },
-  'end': {
-    'dateTime': '2017-08-06T17:00:00-07:00',
-  },
-  'attendees': [
-    {'email': 'talk2tpc@gmail.com'},
-    {'email': 'thomasphilip.c@gmail.com'},
-  ],
-  'reminders': {
-    'useDefault': False,
-    'overrides': [
-      {'method': 'email', 'minutes': 24 * 60},
-      {'method': 'popup', 'minutes': 10},
-    ],
-  },
-}
+
+
 
   page_token = None
   while True:
@@ -111,9 +134,12 @@ def main():
 
   print (calendar_list_entry['summary'])
 
-  #to add event uncomment below 2 lines
-  #event = service.events().insert(calendarId='primary',body=event).execute()
+  #to add event uncomment below 3 lines
+  #new_event=create_event_json('testtech', 'testlocation', 'installation', 'testSupportAgent', '2017-08-09')
+  #event = service.events().insert(calendarId='primary',body=new_event).execute()
   #print('Event created: {}'.format(event.get('htmlLink')))
+
+
   try:
 
     # The Calendar API's events().list method returns paginated results, so we
@@ -129,14 +155,9 @@ def main():
       # returns a list of item objects (events).
       for event in response.get('items', []):
         # The event object is a dict object with a 'summary' key.
-        print (repr(event.get('id', 'NO ID')))
-        print (repr(event.get('summary', 'NO SUMMARY')))
-        print (repr(event.get('description' , 'NO DESCP')))
-        print (repr(event.get('location' , 'NO location')))
-        print (repr(event.get('htmlLink' , 'NO Link')))
-        print (repr(event.get('kind' , 'NO Kind')))
-        print (repr(event.get('originalStartTime.dateTime' , 'NO start date')))
-        print (repr(event.get('updated' , 'NO udpates')))
+        this_event_item = event_item(event)
+
+        this_event_item.show_event()
         print ('---------------------------------------')
       # Get the next request object by passing the previous request object to
       # the list_next method.
@@ -148,15 +169,42 @@ def main():
     print ('The credentials have been revoked or expired, please re-run'
            'the application to re-authorize')
 
-  event = service.events().get(calendarId='primary', eventId='8l7iga12h87bd42nev1kqqm0bk').execute()
+  event = service.events().get(calendarId='primary', eventId='op9gi0g74ldbcup78clts42ijo').execute()
 
-  event['summary'] = 'QER - HEMS'
-  event['OriginalStartTime.dateTime']='2017-08-05T06:05:03.884Z'
+  #event['summary'] = 'QER - HEMS'
+  event['start.dateTime']='2017-08-07T09:00:00-06:00'
+
 
   #updated_event = service.events().update(calendarId='primary', eventId=event['id'], body=event).execute()
 
     # Print the updated date.
   #print (updated_event['updated'])
+
+def create_event_json(techname, location, visittype, agentname, startdate):
+    date_startdate = datetime.strptime(startdate, "%Y-%m-%d").date()
+    year = date_startdate.year
+    month = date_startdate.month
+    day = date_startdate.day
+    startdatetimestamp = datetime(year, month, day, 10, 0, tzinfo=tzoffset('None', +14400))
+    enddatetimestamp = datetime(year, month, day, 14, 0, tzinfo=tzoffset('None', +14400))
+    print('Start time: ' + str(startdatetimestamp))
+    print('End time: ' + str(enddatetimestamp))
+    event = {
+        'summary': visittype + " by " + techname,
+        'location': location,
+        'description': agentname + " scheduled " + visittype + " by " + techname + " at " + location + " for " + startdate,
+        'start': {
+              'dateTime': str(startdatetimestamp).replace(' ','T'),
+          },
+        'end': {
+              'dateTime': str(enddatetimestamp).replace(' ','T'),
+          },
+      }
+
+    return event
+
+
+
 
 if __name__ == '__main__':
   main()
