@@ -219,88 +219,94 @@ def init_google_service_call():
 
 
 def read_emails2json():
-    #try:
-    mail = imaplib.IMAP4_SSL(SMTP_SERVER)
-    mail.login(FROM_EMAIL,FROM_PWD)
-        # print(mail.list()) # prints the folders
-    mail.select('inbox')
-
-    result, data = mail.uid('search', None, "ALL") # search and return uids instead
-    latest_email_uid = data[0].split()[-1]
-
-    #print((data[0][1]))
-    uid_list = data[0].decode("utf-8", "ignore").split()
-    print (uid_list)
-
-    for i in range (len(list(data[0].split()))):
-        email_uid = uid_list[i]
-        result, data = mail.uid('fetch', email_uid, '(RFC822)')
-        raw_email = data[0][1]
-
-        email_message=email.message_from_bytes(raw_email)
-
-        sender = email_message['from']
-        receipient  = email_message['to']
-        cc = email_message['cc']
-        bcc = email_message['bcc']
-        #similar to subject get only the date , strip all metadata
-        a = email_message['Received']
-        a = a.strip(',.-')
-        a = a.replace('  ','')
-
-        received_on = a[a.find(",")-3:a.find("-")]
-        received_on.strip()
-
-        subject = email_message['subject']
-        #because subject may contain additional metadata , strip them , and shorten the subject
-        if len(subject) > 300 :
-            subject = subject[:299]
-        subject = subject.replace('=','')
-        subject = subject.replace('?','')
-
-        for part in email_message.walk():
-            body_str=''
-
-            if part.get_content_type() == "text/plain" or part.get_content_type() == "text/html" :
-                    #try various encodings
-                    encodings =[part.get_content_charset(),'ISO-8859-1','UTF-8','Windows-1252']
-                    for encoding in encodings :
-                        try:
-
-                           body_bytes = part.get_payload(decode=True)
-                           body_str = body_bytes.decode(encoding)
-                           soup = BeautifulSoup(body_str,"html.parser")
-                           body = soup.get_text()
-                           body = re.sub(r'<.*?>', '', body)
-                        except Exception:
-                            pass
+     try:
+        mail = imaplib.IMAP4_SSL(SMTP_SERVER)
+        mail.login(FROM_EMAIL,FROM_PWD)
+            # print(mail.list()) # prints the folders
+        mail.select('inbox')
 
 
-            if part.get_content_maintype() == 'multipart':
-                pass
+        result, data = mail.uid('search', None, "UNSEEN") # search and return uids instead
+        email_count = (len(list(data[0].split())))
+        print ("Total Unread emails "+ str(email_count))
+        if (email_count>0):
+            latest_email_uid = data[0].split()[-1]
 
-            if part.get('Content-Disposition') is None:
-                pass
+            #print((data[0][1]))
+            uid_list = data[0].decode("utf-8", "ignore").split()
+            print (uid_list)
+
+            for i in range (len(list(data[0].split()))):
+                email_uid = uid_list[i]
+                result, data = mail.uid('fetch', email_uid, '(RFC822)')
+                raw_email = data[0][1]
+
+                email_message=email.message_from_bytes(raw_email)
+
+                sender = email_message['from']
+                receipient  = email_message['to']
+                cc = email_message['cc']
+                bcc = email_message['bcc']
+                #similar to subject get only the date , strip all metadata
+                a = email_message['Received']
+                a = a.strip(',.-')
+                a = a.replace('  ','')
+
+                received_on = a[a.find(",")-3:a.find("-")]
+                received_on.strip()
+
+                subject = email_message['subject']
+                #because subject may contain additional metadata , strip them , and shorten the subject
+                if len(subject) > 300 :
+                    subject = subject[:299]
+                subject = subject.replace('=','')
+                subject = subject.replace('?','')
+
+                for part in email_message.walk():
+                    body_str=''
+
+                    if part.get_content_type() == "text/plain" or part.get_content_type() == "text/html" :
+                            #try various encodings
+                            encodings =[part.get_content_charset(),'ISO-8859-1','UTF-8','Windows-1252']
+                            for encoding in encodings :
+                                try:
+
+                                   body_bytes = part.get_payload(decode=True)
+                                   body_str = body_bytes.decode(encoding)
+                                   soup = BeautifulSoup(body_str,"html.parser")
+                                   body = soup.get_text()
+                                   body = re.sub(r'<.*?>', '', body)
+                                except Exception:
+                                    pass
 
 
-        #print("FROM:"+sender)
-        #print("SUBJECT:"+subject)
-        #print("TO:"+receipient)
-        #if cc != None:
-        #    print("CC:"+ cc)
-        #print("DATE:"+received_on)
-        #print("Body_HTML:"+body_str)
-        #print("Body_Simple:"+str(body))
+                    if part.get_content_maintype() == 'multipart':
+                        pass
+
+                    if part.get('Content-Disposition') is None:
+                        pass
 
 
-        #build a json object from each read email
-        keys = ['from','subject','to','date','bodyHtml','bodySimple']
-        values = [sender,subject,receipient,received_on,body_str,body]
-        data = build_json(keys,values)
+                #print("FROM:"+sender)
+                #print("SUBJECT:"+subject)
+                #print("TO:"+receipient)
+                #if cc != None:
+                #    print("CC:"+ cc)
+                #print("DATE:"+received_on)
+                #print("Body_HTML:"+body_str)
+                #print("Body_Simple:"+str(body))
 
-        # call a email parser to work with the read email
-        parse_json_email(data)
 
+                #build a json object from each read email
+                keys = ['from','subject','to','date','bodyHtml','bodySimple']
+                values = [sender,subject,receipient,received_on,body_str,body]
+                data = build_json(keys,values)
+
+                # call a email parser to work with the read email
+                parse_json_email(data)
+     except:
+         print ("Error Occured")
+         pass
 
 #
 def parse_json_email(data):
@@ -321,7 +327,7 @@ def parse_json_email(data):
             event = create_event_json(event_reqestlist[0],event_reqestlist[1],event_reqestlist[2],event_reqestlist[3],event_reqestlist[4])
             print(event)
             # creating events
-            create_event('roamworkstech@gmail.com',event)
+            #create_event('roamworkstech@gmail.com',event)
 
 
 def build_event_fromEmail(text):
@@ -350,9 +356,9 @@ def create_event_json(visittype,location, techname,agentname, startdate):
     startdatetimestamp = datetime(year, month, day, 10, 0, tzinfo=tzoffset('None', +14400))
     enddatetimestamp = datetime(year, month, day, 14, 0, tzinfo=tzoffset('None', +14400))
     event = {
-        'summary': visittype + " by " + techname,
+        'summary': visittype + " for " + techname,
         'location': location,
-        'description': agentname + " scheduled " + visittype + " by " + techname + " at " + location + " for " + startdate,
+        'description': agentname + " scheduled " + visittype + " for " + techname + " at " + location + " for " + startdate,
         'start': {
               'dateTime': str(startdatetimestamp).replace(' ','T'),
           },
