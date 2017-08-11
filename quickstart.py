@@ -134,10 +134,22 @@ def main():
 
   print (calendar_list_entry['summary'])
 
+  newevent = {
+  'summary': 'Google I/O 2015',
+  'location': '800 Howard St., San Francisco, CA 94103',
+  'description': 'A chance to hear more about Google\'s developer products.',
+  'start': {
+    'dateTime': '2015-05-28T09:00:00-07:00',
+  },
+  'end': {
+    'dateTime': '2015-05-28T17:00:00-07:00',
+  },
+}
+
   #to add event uncomment below 3 lines
-  #new_event=create_event_json('testtech', 'testlocation', 'installation', 'testSupportAgent', '2017-08-09')
-  #event = service.events().insert(calendarId='primary',body=new_event).execute()
-  #print('Event created: {}'.format(event.get('htmlLink')))
+  new_event=create_event_json('tech', 'location', 'installation', 'testSupportAgent', '2017-09-12')
+  event = service.events().insert(calendarId='primary',body=new_event).execute()
+  print('Event created: {}'.format(event.get('htmlLink')))
 
 
   try:
