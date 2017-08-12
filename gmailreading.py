@@ -365,7 +365,7 @@ def create_event_json(visittype,location, techname,agentname, startdate):
     event = {
         'summary': visittype + " for " + techname,
         'location': location,
-        'description': agentname + " scheduled " + visittype + " for " + techname + " at " + location + " for " + startdate,
+        'description': agentname + " scheduled " + visittype + " for " + techname + " at " + location + " on " + startdate,
         'start': {
               'dateTime': str(startdatetimestamp).replace(' ','T'),
           },
